@@ -1,5 +1,6 @@
 import { db } from "./db.js";
 import { icon } from "./icons.js";
+import { todayStr } from "./utils.js";
 
 export function applySettings(settings){
   const s = settings || db.settings();
@@ -72,9 +73,29 @@ export function dateNavHTML(label, isToday){
   return `
     <div class="field-row" style="align-items:center;margin-bottom:16px;">
       <button class="btn btn-icon" id="dateNavPrev" type="button" aria-label="Previous day" style="transform:scaleX(-1)">${icon("chevronRight")}</button>
-      <div class="btn" style="flex:1 1 auto;justify-content:center;pointer-events:none;">${label}</div>
+      <button class="btn" id="dateNavLabel" type="button" style="flex:1 1 auto;justify-content:center;gap:7px;">${icon("calendar")}${label}</button>
       <button class="btn btn-icon" id="dateNavNext" type="button" aria-label="Next day" ${isToday?"disabled":""}>${icon("chevronRight")}</button>
     </div>`;
+}
+
+// Opens a sheet with a native date picker so the user can jump straight to any
+// date rather than stepping through prev/next one day at a time. onSelect
+// receives the chosen date as "YYYY-MM-DD".
+export function openDateJumpSheet(currentDateStr, onSelect){
+  const sheet = openSheet(`
+    <div class="sheet__head"><h2>Go to date</h2><button class="btn btn-icon" data-close-sheet aria-label="Close">${icon("close")}</button></div>
+    <div class="field">
+      <label for="jump-date">Date</label>
+      <input id="jump-date" type="date" value="${currentDateStr}" max="${todayStr()}"/>
+    </div>
+    <button class="btn btn-primary btn-block" id="jump-go">Go to date</button>
+  `);
+  sheet.querySelector("#jump-go").addEventListener("click", ()=>{
+    const val = sheet.querySelector("#jump-date").value;
+    if(!val) return;
+    closeSheet();
+    onSelect(val);
+  });
 }
 
 export function escapeHTML(str){

@@ -1,6 +1,6 @@
 import { db } from "../db.js";
-import { showToast, dateNavHTML } from "../ui.js";
-import { todayStr, addDays, friendlyDate, fmt } from "../utils.js";
+import { showToast, dateNavHTML, confirmDialog, openDateJumpSheet } from "../ui.js";
+import { todayStr, addDays, dateNavLabel, fmt } from "../utils.js";
 
 let currentDate = todayStr();
 
@@ -17,13 +17,14 @@ export function renderMicronutrients(container){
   const day = db.day(currentDate);
   const targets = db.microTargets();
   const isToday = currentDate === todayStr();
+  const dateFormat = db.settings().dateFormat;
 
   container.innerHTML = `
     <div class="view-header">
       <h1>Micronutrients</h1>
       <p>Track intake against your daily targets.</p>
     </div>
-    ${dateNavHTML(friendlyDate(currentDate), isToday)}
+    ${dateNavHTML(dateNavLabel(currentDate, dateFormat), isToday)}
 
     <div class="card">
       ${NUTRIENTS.map(n=>{
@@ -44,7 +45,10 @@ export function renderMicronutrients(container){
             <input id="n-${n.key}" type="number" min="0" step="0.1" value="${day.micronutrients[n.key] ?? ""}"/>
           </div>`).join("")}
       </div>
-      <button class="btn btn-primary btn-block" id="save-micro" style="margin-top:6px;">Save intake</button>
+      <div class="field-row">
+        <button class="btn btn-primary btn-block" id="save-micro" style="margin-top:6px;">Save intake</button>
+        <button class="btn btn-block" id="clear-micro" type="button" style="margin-top:6px;flex:0 0 auto;">Clear</button>
+      </div>
     </div>
 
     <div class="section-label">Daily targets</div>
@@ -63,6 +67,9 @@ export function renderMicronutrients(container){
   container.querySelector("#dateNavPrev").addEventListener("click", ()=>{ currentDate = addDays(currentDate,-1); renderMicronutrients(container); });
   const nextBtn = container.querySelector("#dateNavNext");
   if(nextBtn) nextBtn.addEventListener("click", ()=>{ if(currentDate!==todayStr()){ currentDate = addDays(currentDate,1); renderMicronutrients(container); } });
+  container.querySelector("#dateNavLabel").addEventListener("click", ()=>{
+    openDateJumpSheet(currentDate, (newDate)=>{ currentDate = newDate; renderMicronutrients(container); });
+  });
 
   container.querySelector("#save-micro").addEventListener("click", ()=>{
     const d = db.day(currentDate);
@@ -72,6 +79,16 @@ export function renderMicronutrients(container){
     });
     db.saveDay(currentDate, d);
     showToast("Intake saved");
+    renderMicronutrients(container);
+  });
+
+  container.querySelector("#clear-micro").addEventListener("click", async ()=>{
+    const ok = await confirmDialog("Clear all logged micronutrient intake for this day?");
+    if(!ok) return;
+    const d = db.day(currentDate);
+    NUTRIENTS.forEach(n=>{ d.micronutrients[n.key] = 0; });
+    db.saveDay(currentDate, d);
+    showToast("Cleared");
     renderMicronutrients(container);
   });
 

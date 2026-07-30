@@ -1,13 +1,14 @@
 import { db, uid } from "../db.js";
 import { icon } from "../icons.js";
-import { showToast, openSheet, closeSheet, dateNavHTML, escapeHTML } from "../ui.js";
-import { todayStr, addDays, friendlyDate, convert, fmt, sum } from "../utils.js";
+import { showToast, openSheet, closeSheet, dateNavHTML, escapeHTML, confirmDialog, openDateJumpSheet } from "../ui.js";
+import { todayStr, addDays, dateNavLabel, convert, fmt, sum } from "../utils.js";
 
 let currentDate = todayStr();
 const WORKOUT_TYPES = ["Run","Walk","Cycle","Swim","Strength","Yoga","HIIT","Sport","Other"];
 
 export function renderActivity(container){
   const units = db.settings().units;
+  const dateFormat = db.settings().dateFormat;
   const day = db.day(currentDate);
   const isToday = currentDate === todayStr();
   const workoutMin = sum(day.workouts.map(w=>w.minutes));
@@ -17,7 +18,7 @@ export function renderActivity(container){
       <h1>Activity &amp; Exercise</h1>
       <p>Steps, distance, and workouts.</p>
     </div>
-    ${dateNavHTML(friendlyDate(currentDate), isToday)}
+    ${dateNavHTML(dateNavLabel(currentDate, dateFormat), isToday)}
 
     <div class="card">
       <div class="field-row">
@@ -30,7 +31,10 @@ export function renderActivity(container){
           <div class="unit-suffix"><input id="f-distance" type="number" min="0" step="0.01" value="${day.distanceKm!=null?fmt(convert.distanceToDisplay(day.distanceKm,units.distance),2):""}" placeholder="Distance"/><span>${convert.distanceUnitLabel(units.distance)}</span></div>
         </div>
       </div>
-      <button class="btn btn-primary btn-block" id="save-activity">Save</button>
+      <div class="field-row">
+        <button class="btn btn-primary btn-block" id="save-activity">Save</button>
+        <button class="btn btn-block" id="clear-activity" type="button" style="flex:0 0 auto;">Clear</button>
+      </div>
     </div>
 
     <div class="section-label">Workouts — ${fmt(workoutMin)} min total</div>
@@ -51,6 +55,9 @@ export function renderActivity(container){
   container.querySelector("#dateNavPrev").addEventListener("click", ()=>{ currentDate = addDays(currentDate,-1); renderActivity(container); });
   const nextBtn = container.querySelector("#dateNavNext");
   if(nextBtn) nextBtn.addEventListener("click", ()=>{ if(currentDate!==todayStr()){ currentDate = addDays(currentDate,1); renderActivity(container); } });
+  container.querySelector("#dateNavLabel").addEventListener("click", ()=>{
+    openDateJumpSheet(currentDate, (newDate)=>{ currentDate = newDate; renderActivity(container); });
+  });
 
   container.querySelector("#save-activity").addEventListener("click", ()=>{
     const d = db.day(currentDate);
@@ -63,11 +70,25 @@ export function renderActivity(container){
     renderActivity(container);
   });
 
+  container.querySelector("#clear-activity").addEventListener("click", async ()=>{
+    const ok = await confirmDialog("Clear steps and distance for this day?");
+    if(!ok) return;
+    const d = db.day(currentDate);
+    d.steps = null;
+    d.distanceKm = null;
+    db.saveDay(currentDate, d);
+    showToast("Cleared");
+    renderActivity(container);
+  });
+
   container.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", async ()=>{
+      const ok = await confirmDialog("Delete this workout?");
+      if(!ok) return;
       const d = db.day(currentDate);
       d.workouts = d.workouts.filter(w=>w.id!==btn.getAttribute("data-del"));
       db.saveDay(currentDate, d);
+      showToast("Workout deleted");
       renderActivity(container);
     });
   });

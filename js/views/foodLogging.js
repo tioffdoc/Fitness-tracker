@@ -1,7 +1,7 @@
 import { db, uid } from "../db.js";
 import { icon } from "../icons.js";
-import { showToast, openSheet, closeSheet, dateNavHTML, escapeHTML } from "../ui.js";
-import { todayStr, addDays, friendlyDate, sum, fmt } from "../utils.js";
+import { showToast, openSheet, closeSheet, dateNavHTML, escapeHTML, confirmDialog, openDateJumpSheet } from "../ui.js";
+import { todayStr, addDays, dateNavLabel, sum, fmt } from "../utils.js";
 
 const MEALS = [
   { id: "breakfast", label: "Breakfast" },
@@ -16,6 +16,7 @@ export function renderFoodLogging(container){
   const day = db.day(currentDate);
   const totalKcal = sum(day.calorieEntries.map(e=>e.kcal));
   const isToday = currentDate === todayStr();
+  const dateFormat = db.settings().dateFormat;
 
   const mealBlocks = MEALS.map(meal=>{
     const entries = day.calorieEntries.filter(e=>e.meal===meal.id);
@@ -44,7 +45,7 @@ export function renderFoodLogging(container){
       <h1>Food Logging</h1>
       <p>Log meals and track calories &amp; macros day by day.</p>
     </div>
-    ${dateNavHTML(friendlyDate(currentDate), isToday)}
+    ${dateNavHTML(dateNavLabel(currentDate, dateFormat), isToday)}
     <div class="stat-tile" style="margin-bottom:16px;">
       <div class="stat-tile__label">${icon("flame")}Total logged</div>
       <div class="stat-tile__value tabular">${fmt(totalKcal)}<small>kcal</small></div>
@@ -56,12 +57,18 @@ export function renderFoodLogging(container){
   container.querySelector("#dateNavPrev").addEventListener("click", ()=>{ currentDate = addDays(currentDate,-1); renderFoodLogging(container); });
   const nextBtn = container.querySelector("#dateNavNext");
   if(nextBtn) nextBtn.addEventListener("click", ()=>{ if(currentDate!==todayStr()){ currentDate = addDays(currentDate,1); renderFoodLogging(container); } });
+  container.querySelector("#dateNavLabel").addEventListener("click", ()=>{
+    openDateJumpSheet(currentDate, (newDate)=>{ currentDate = newDate; renderFoodLogging(container); });
+  });
 
   container.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", async ()=>{
+      const ok = await confirmDialog("Remove this food entry from today's log?");
+      if(!ok) return;
       const d = db.day(currentDate);
       d.calorieEntries = d.calorieEntries.filter(e=>e.id !== btn.getAttribute("data-del"));
       db.saveDay(currentDate, d);
+      showToast("Entry removed");
       renderFoodLogging(container);
     });
   });

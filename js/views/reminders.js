@@ -60,6 +60,7 @@ export function renderReminders(container){
       const ok = await confirmDialog("Delete this reminder?");
       if(!ok) return;
       db.saveReminders(db.reminders().filter(r=>r.id!==btn.getAttribute("data-del")));
+      showToast("Reminder deleted");
       renderReminders(container);
     });
   });

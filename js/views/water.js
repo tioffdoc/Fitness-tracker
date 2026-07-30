@@ -1,7 +1,7 @@
 import { db, uid } from "../db.js";
 import { icon } from "../icons.js";
-import { showToast, dateNavHTML } from "../ui.js";
-import { todayStr, addDays, friendlyDate, convert, fmt } from "../utils.js";
+import { showToast, dateNavHTML, confirmDialog, openDateJumpSheet } from "../ui.js";
+import { todayStr, addDays, dateNavLabel, convert, fmt } from "../utils.js";
 
 let currentDate = todayStr();
 const QUICK_ML = [150, 250, 350, 500];
@@ -12,6 +12,7 @@ export function renderWater(container){
   const day = db.day(currentDate);
   const isToday = currentDate === todayStr();
   const goal = settings.waterGoalMl || 2000;
+  const dateFormat = settings.dateFormat;
   const pct = Math.max(0, Math.min(100, Math.round((day.waterMl/goal)*100)));
 
   container.innerHTML = `
@@ -19,7 +20,7 @@ export function renderWater(container){
       <h1>Water Intake</h1>
       <p>Quick-log your hydration through the day.</p>
     </div>
-    ${dateNavHTML(friendlyDate(currentDate), isToday)}
+    ${dateNavHTML(dateNavLabel(currentDate, dateFormat), isToday)}
 
     <div class="card">
       <div class="pbar-row" style="margin-bottom:6px;">
@@ -57,6 +58,9 @@ export function renderWater(container){
   container.querySelector("#dateNavPrev").addEventListener("click", ()=>{ currentDate = addDays(currentDate,-1); renderWater(container); });
   const nextBtn = container.querySelector("#dateNavNext");
   if(nextBtn) nextBtn.addEventListener("click", ()=>{ if(currentDate!==todayStr()){ currentDate = addDays(currentDate,1); renderWater(container); } });
+  container.querySelector("#dateNavLabel").addEventListener("click", ()=>{
+    openDateJumpSheet(currentDate, (newDate)=>{ currentDate = newDate; renderWater(container); });
+  });
 
   function addWater(ml){
     if(!ml) return;
@@ -76,12 +80,15 @@ export function renderWater(container){
   });
 
   container.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+    btn.addEventListener("click", async ()=>{
+      const ok = await confirmDialog("Remove this water entry?");
+      if(!ok) return;
       const d = db.day(currentDate);
       const entry = d.waterEntries.find(e=>e.id===btn.getAttribute("data-del"));
       if(entry) d.waterMl = Math.max(0, (d.waterMl||0) - entry.ml);
       d.waterEntries = d.waterEntries.filter(e=>e.id!==btn.getAttribute("data-del"));
       db.saveDay(currentDate, d);
+      showToast("Entry removed");
       renderWater(container);
     });
   });

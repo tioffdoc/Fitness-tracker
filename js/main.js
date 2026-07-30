@@ -73,8 +73,10 @@ function profileInitials(){
 
 function buildShell(){
   document.getElementById("app").innerHTML = `
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open menu">${icon("menu")}</button>
+    <div class="sidebar-scrim" id="sidebarScrim"></div>
     <nav class="sidebar" id="sidebar">
-      <div class="sidebar__brand">${ICONS.pulse}</div>
+      <button class="sidebar__brand" id="sidebarClose" aria-label="Close menu">${ICONS.pulse}</button>
       ${SIDEBAR_ROUTES.map(r=>`
         <button class="navicon" data-route="${r.id}" aria-label="${r.label}">
           ${icon(r.icon)}
@@ -97,12 +99,29 @@ function buildShell(){
   `;
 
   document.querySelectorAll(".navicon").forEach(btn=>{
-    btn.addEventListener("click", ()=>navigateTo(btn.getAttribute("data-route")));
+    btn.addEventListener("click", ()=>{ navigateTo(btn.getAttribute("data-route")); closeSidebar(); });
   });
+  wireSidebarToggle();
   wireProfilePopover();
   updateOfflineBanner();
   window.addEventListener("online", updateOfflineBanner);
   window.addEventListener("offline", updateOfflineBanner);
+}
+
+function openSidebar(){
+  document.getElementById("sidebar").classList.add("is-open");
+  document.getElementById("sidebarScrim").classList.add("is-visible");
+  document.getElementById("sidebarToggle").classList.add("is-hidden");
+}
+function closeSidebar(){
+  document.getElementById("sidebar").classList.remove("is-open");
+  document.getElementById("sidebarScrim").classList.remove("is-visible");
+  document.getElementById("sidebarToggle").classList.remove("is-hidden");
+}
+function wireSidebarToggle(){
+  document.getElementById("sidebarToggle").addEventListener("click", openSidebar);
+  document.getElementById("sidebarClose").addEventListener("click", closeSidebar);
+  document.getElementById("sidebarScrim").addEventListener("click", closeSidebar);
 }
 
 function wireProfilePopover(){

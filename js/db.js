@@ -30,6 +30,7 @@ const DEFAULT_SETTINGS = {
   theme: "system",            // light | dark | system
   accent: "teal",
   fontSize: "medium",         // small | medium | large
+  dateFormat: "dmy",          // dmy (DD/MM/YYYY) | mdy (MM/DD/YYYY) | iso (YYYY-MM-DD)
   units: {
     weight: "kg",              // kg | lb
     height: "cm",               // cm | ftin

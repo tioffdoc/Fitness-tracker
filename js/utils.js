@@ -20,9 +20,10 @@ export function shortDayLabel(dateStr){
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString(undefined, { weekday: "short" }).slice(0,2);
 }
-export function shortDateLabel(dateStr){
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+export function shortDateLabel(dateStr, format){
+  const [, m, d] = dateStr.split("-");
+  const mm = Number(m), dd = Number(d);
+  return format === "mdy" ? `${mm}/${dd}` : `${dd}/${mm}`;
 }
 export function weekStart(dateStr){
   const d = new Date(dateStr + "T00:00:00");
@@ -35,6 +36,23 @@ export function friendlyDate(dateStr){
   if(dateStr === addDays(todayStr(), -1)) return "Yesterday";
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+}
+
+// Numeric date string respecting the user's chosen format setting.
+export function formatDateNumeric(dateStr, format){
+  const [y,m,d] = dateStr.split("-");
+  if(format === "mdy") return `${m}/${d}/${y}`;
+  if(format === "iso") return `${y}-${m}-${d}`;
+  return `${d}/${m}/${y}`; // dmy (default)
+}
+
+// Label used in the date-nav header: "Today · 30/07/2026", "Yesterday · 29/07/2026",
+// or just the numeric date further back.
+export function dateNavLabel(dateStr, format){
+  const numeric = formatDateNumeric(dateStr, format);
+  if(dateStr === todayStr()) return `Today · ${numeric}`;
+  if(dateStr === addDays(todayStr(), -1)) return `Yesterday · ${numeric}`;
+  return numeric;
 }
 
 // ---------------------------------------------------------------

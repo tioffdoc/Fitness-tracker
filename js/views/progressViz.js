@@ -20,9 +20,10 @@ function dayMetrics(dateStr){
 
 export function renderProgressViz(container){
   const units = db.settings().units;
+  const dateFormat = db.settings().dateFormat;
   const dates = lastNDates(range);
   const metrics = dates.map(dayMetrics);
-  const labelFn = range > 14 ? shortDateLabel : shortDayLabel;
+  const labelFn = range > 14 ? (d)=>shortDateLabel(d, dateFormat) : shortDayLabel;
 
   const kcalPoints = metrics.map(m=>({ label: labelFn(m.date), value: m.kcal==null?null:round(convert.energyToDisplay(m.kcal, units.energy)) }));
   const weightPoints = metrics.map(m=>({ label: labelFn(m.date), value: m.weightKg==null?null:round(convert.weightToDisplay(m.weightKg, units.weight),1) }));

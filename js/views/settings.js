@@ -54,6 +54,14 @@ export function renderSettings(container){
       ${unitRow("Water", "water", [["ml","ml"],["oz","fl oz"]], s.units.water)}
       ${unitRow("Energy", "energy", [["kcal","kcal"],["kj","kJ"]], s.units.energy)}
       ${unitRow("Distance", "distance", [["km","km"],["mi","mi"]], s.units.distance)}
+      <div class="field" style="margin-bottom:0;">
+        <label>Date format</label>
+        <div class="segmented" data-dateformat-group="1">
+          <button type="button" data-val="dmy" class="${s.dateFormat==="dmy"?"is-active":""}">DD/MM/YYYY</button>
+          <button type="button" data-val="mdy" class="${s.dateFormat==="mdy"?"is-active":""}">MM/DD/YYYY</button>
+          <button type="button" data-val="iso" class="${s.dateFormat==="iso"?"is-active":""}">YYYY-MM-DD</button>
+        </div>
+      </div>
     </div>
 
     <div class="section-label">Privacy &amp; security</div>
@@ -116,6 +124,15 @@ export function renderSettings(container){
       group.querySelectorAll("button").forEach(b=>b.classList.toggle("is-active", b===btn));
       showToast("Units updated");
     });
+  });
+  // date format
+  const dfGroup = container.querySelector("[data-dateformat-group]");
+  if(dfGroup) dfGroup.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button[data-val]"); if(!btn) return;
+    const next = db.settings(); next.dateFormat = btn.getAttribute("data-val");
+    db.saveSettings(next);
+    dfGroup.querySelectorAll("button").forEach(b=>b.classList.toggle("is-active", b===btn));
+    showToast("Date format updated");
   });
 
   // passcode
